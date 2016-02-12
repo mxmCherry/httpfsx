@@ -115,7 +115,7 @@ func main() {
 		return
 	}
 
-	logger := log.New(os.Stdout, "", log.LstdFlags)
+	logger := log.New(os.Stderr, "", log.LstdFlags)
 
 	handler := makeHandler(config.Root)
 
