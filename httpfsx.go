@@ -1,3 +1,11 @@
+/*
+
+Command httpfsx launches mobile-friendly HTTP file-system explorer (readonly)
+
+Basic usage:
+	httpfsx --addr=tcp://:1024 --root=$HOME/share
+
+*/
 package main
 
 import (
@@ -25,20 +33,20 @@ import (
 // ----------------------------------------------------------------------------
 
 type Config struct {
-	Addr string
-	Root string
+	Addr string // address to serve on
+	Root string // public root directory path
 
-	FasthttpConcurrency          uint64
-	FasthttpReadBufferSize       uint64
-	FasthttpWriteBufferSize      uint64
-	FasthttpReadTimeout          uint64
-	FasthttpWriteTimeout         uint64
-	FasthttpMaxConnsPerIP        uint64
-	FasthttpMaxRequestsPerConn   uint64
-	FasthttpMaxKeepaliveDuration uint64
-	FasthttpMaxRequestBodySize   uint64
-	FasthttpReduceMemoryUsage    bool
-	FasthttpGetOnly              bool
+	FasthttpConcurrency          uint64 // the maximum number of concurrent connections the server may serve
+	FasthttpReadBufferSize       uint64 // per-connection buffer size for requests' reading. This also limits the maximum header size; bytes
+	FasthttpWriteBufferSize      uint64 // per-connection buffer size for responses' writing; bytes
+	FasthttpReadTimeout          uint64 // maximum duration for full request reading (including body); milliseconds
+	FasthttpWriteTimeout         uint64 // maximum duration for full response writing (including body); milliseconds
+	FasthttpMaxConnsPerIP        uint64 // maximum number of concurrent client connections allowed per IP
+	FasthttpMaxRequestsPerConn   uint64 // maximum number of requests served per connection
+	FasthttpMaxKeepaliveDuration uint64 // maximum keep-alive connection lifetime; milliseconds
+	FasthttpMaxRequestBodySize   uint64 // maximum request body size; bytes
+	FasthttpReduceMemoryUsage    bool   // aggressively reduces memory usage at the cost of higher CPU usage if set to true
+	FasthttpGetOnly              bool   // rejects all non-GET requests if set to true
 }
 
 // ----------------------------------------------------------------------------
@@ -83,6 +91,7 @@ func main() {
 
 	flagSet.Parse(os.Args[1:])
 
+	// validating addr to provide more informative error message (http.Listen is not so detailed):
 	if !regexp.MustCompile("^(?:(?:tcp[46]?)://(?:.*?):\\d{1,})|(?:unix(?:packet)?://.+?)$").MatchString(config.Addr) {
 		os.Stderr.WriteString("Error: --addr should be provided in a form of PROTO://ADDR, where PROTO is tcp, tcp4, tcp6, unix or unixpacket and ADDR is a HOST:PORT combination or /path/to/socket.unix")
 		flag.Usage()
@@ -90,6 +99,7 @@ func main() {
 		return
 	}
 
+	// determining absolute public root path (to be informative; also, this allows to provide non-empty header for root location):
 	config.Root = path.Clean(config.Root)
 	if !path.IsAbs(config.Root) {
 		wd, err := os.Getwd()
@@ -101,6 +111,7 @@ func main() {
 		config.Root = path.Join(wd, config.Root)
 	}
 
+	// parsing address string (decompose it into schema + host):
 	addrURL, err := url.Parse(config.Addr)
 	if err != nil {
 		os.Stderr.WriteString(err.Error() + "\n")
@@ -108,6 +119,7 @@ func main() {
 		return
 	}
 
+	// create listener (doing it right now helps to detect errors like "address already in use"):
 	listener, err := net.Listen(addrURL.Scheme, addrURL.Host)
 	if err != nil {
 		os.Stderr.WriteString(err.Error() + "\n")
@@ -121,7 +133,7 @@ func main() {
 
 	server := fasthttp.Server{
 		Handler:              handler,
-		Name:                 "httpfsx v0.0.1",
+		Name:                 "httpfsx v0.0.2", // TODO: don't forget to change this before creating release!
 		Concurrency:          int(config.FasthttpConcurrency),
 		ReadBufferSize:       int(config.FasthttpReadBufferSize),
 		WriteBufferSize:      int(config.FasthttpWriteBufferSize),
@@ -136,6 +148,7 @@ func main() {
 		Logger:               logger,
 	}
 
+	// notify user about current settings:
 	logger.Printf("Addr: %s", addrURL.String())
 	logger.Printf("Root: %s", config.Root)
 
@@ -150,6 +163,7 @@ func main() {
 
 // ----------------------------------------------------------------------------
 
+// decomposeOsError tries to determine HTTP status, suitable for passed os.* error
 func decomposeOsError(err error) (string, int) {
 
 	if os.IsNotExist(err) {
@@ -168,17 +182,20 @@ func decomposeOsError(err error) (string, int) {
 func makeHandler(root string) fasthttp.RequestHandler {
 	return func(ctx *fasthttp.RequestCtx) {
 
-		relPath := path.Join("/", string(ctx.Path()))
-		absPath := path.Join(root, relPath)
+		relPath := path.Join("/", string(ctx.Path())) // relative file-system item path
+		absPath := path.Join(root, relPath)           // absolute file-system item path
 
+		// check if requested item exists and what is it's type:
 		stats, err := os.Stat(absPath)
 		if err != nil {
 			ctx.Error(decomposeOsError(err))
 			return
 		}
 
+		// serve dir's listing:
 		if stats.IsDir() {
 
+			// get dir contents:
 			fis, err := ioutil.ReadDir(absPath)
 			if err != nil {
 				ctx.Error(decomposeOsError(err))
@@ -202,18 +219,26 @@ func makeHandler(root string) fasthttp.RequestHandler {
 			`
 
 			for _, fi := range fis {
+
 				name := fi.Name()
+
+				// skip (don't list) dotted (hidden) files:
 				if strings.HasPrefix(name, ".") {
 					continue
 				}
-				itemType := "file"
-				meta := ""
+
+				itemType := "file" // dir child type (file/dir)
+				meta := ""         // some human-readable metadata about current child
+
 				if fi.IsDir() {
-					itemType = " dir"
+					itemType = "dir"
+					// for dirs only human-readable mod time is available:
 					meta = "Modified " + humanize.Time(fi.ModTime())
 				} else {
+					// for files both human-readable size and mod time are available:
 					meta = humanize.Bytes(uint64(fi.Size())) + ", modified " + humanize.Time(fi.ModTime())
 				}
+
 				page += `
 					<li class="item ` + itemType + `">
 						<a class="star" href="javascript://">★</a>
@@ -241,6 +266,9 @@ func makeHandler(root string) fasthttp.RequestHandler {
 			return
 		}
 
+		// serve file:
+
+		// try relatively lightweight MIME (Content-Type) detection first (by file extension):
 		mimeType := mime.TypeByExtension(path.Ext(absPath))
 
 		if mimeType != "" {
@@ -249,12 +277,16 @@ func makeHandler(root string) fasthttp.RequestHandler {
 			return
 		}
 
+		// if MIME detection by extension failed, let's do some magic:
+
+		// we'll need to read ~ 512 bytes from file:
 		file, err := os.Open(absPath)
 		if err != nil {
 			ctx.Error(decomposeOsError(err))
 			return
 		}
 
+		// read file "prefix" (512 byte):
 		buf := make([]byte, 512)
 		_, err = file.Read(buf)
 		if err != nil && err != io.EOF {
@@ -262,12 +294,14 @@ func makeHandler(root string) fasthttp.RequestHandler {
 			return
 		}
 
+		// rewind file back to it's beginning (to send whole file down the code):
 		_, err = file.Seek(0, os.SEEK_SET)
 		if err != nil {
 			ctx.Error(decomposeOsError(err))
 			return
 		}
 
+		// magic:
 		mimeType = http.DetectContentType(buf)
 
 		ctx.SetContentType(mimeType)
@@ -279,6 +313,7 @@ func makeHandler(root string) fasthttp.RequestHandler {
 
 // ----------------------------------------------------------------------------
 
+// httpfsx CSS:
 var style string = `
 	
 	.httpfsx {
@@ -360,95 +395,125 @@ var style string = `
 
 // ----------------------------------------------------------------------------
 
+// httpfsx JS:
 var script string = `
 
-'use strict'
-
-var httpfsx = document.querySelector('.httpfsx')
-
-var items = httpfsx.querySelectorAll('.httpfsx .list .item')
-
-var existingPaths = []
-
-for( var i = 0; i < items.length; i++ ) {
+(function() {
+	'use strict'
 	
-	var item = items[i]
+	// root element:
+	var httpfsx = document.querySelector('.httpfsx')
 	
-	var star = item.querySelector('.star')
-	var link = item.querySelector('.link')
+	// file-system item nodes:
+	var items = httpfsx.querySelectorAll('.httpfsx .list .item')
 	
-	var path = link.getAttribute('href')
+	// paths, that are listed on current page:
+	var existingPaths = []
 	
-	var starKey = 'httpfsx:star:' + path
-	
-	star.setAttribute('data-httpfsx-star-key', starKey)
-	
-	if( localStorage.getItem(starKey) ) {
-		star.classList.add('active')
-	}
-	
-	existingPaths.push(path.replace(/\/{2,}|\/$/g, ''))
-	
-}
-
-var currentPath = location.pathname.replace(/\/{2,}|\/$/g, '')
-
-for( var key in localStorage ) {
-	
-	if( key.indexOf('httpfsx:') == -1 ) {
-		continue
-	}
-	
-	var storedPath = key.replace(/httpfsx:[^:]+?:/, '')
-	
-	if( storedPath.indexOf(currentPath) != 0 ) {
-		continue
-	}
-	
-	var exists = false
-	
-	for( var i = 0; i < existingPaths.length; i++ ) {
-		var existingPath = existingPaths[i]
-		if( storedPath.indexOf(existingPath) == 0 ) {
-			exists = true
-			break
-		}
-	}
-	
-	if( !exists ) {
-		localStorage.removeItem(key)
-	}
-	
-}
-
-httpfsx.addEventListener('click', function(event) {
-	
-	if( event.target.classList.contains('star') ) {
+	for( var i = 0; i < items.length; i++ ) {
 		
-		var star = event.target
+		// item wrapper node:
+		var item = items[i]
 		
-		var starKey = star.getAttribute('data-httpfsx-star-key')
+		var star = item.querySelector('.star') // starring element
+		var link = item.querySelector('.link') // link element (for item's path detection)
 		
+		// item's path:
+		var path = link.getAttribute('href')
+		
+		// what key is used for storing current item's starred state:
+		var starKey = 'httpfsx:star:' + path
+		
+		// remember "starring" key to simplify "toggle starring" click handler:
+		star.setAttribute('data-httpfsx-star-key', starKey)
+		
+		// change star's view, if item is starred:
 		if( localStorage.getItem(starKey) ) {
-			localStorage.removeItem(starKey)
-			star.classList.remove('active')
-		} else {
-			localStorage.setItem(starKey, 'T')
 			star.classList.add('active')
 		}
 		
-	} else if( event.target.classList.contains('clear-storage') ) {
-		if( confirm('Clear storage?') ) {
-			localStorage.clear()
-			var stars = httpfsx.querySelectorAll('.star')
-			for( var i = 0; i < stars.length; i++ ) {
-				var star = stars[i]
-				star.classList.remove('active')
-			}
-			alert('Storage cleared')
-		}
+		// remember this item's path to remove deleted items from localStorage down the code:
+		existingPaths.push(path.replace(/\/{2,}|\/$/g, ''))
+		
 	}
 	
-})
+	// current request (location) path:
+	var currentPath = location.pathname.replace(/\/{2,}|\/$/g, '')
+	
+	// traversing localStorage items to clean up deleted ones:
+	for( var key in localStorage ) {
+		
+		// ignoring any foreign keys:
+		if( key.indexOf('httpfsx:') == -1 ) {
+			continue
+		}
+		
+		// extracting stored item path from key:
+		var storedPath = key.replace(/httpfsx:[^:]+?:/, '')
+		
+		// got item from other path, cannot touch it:
+		if( storedPath.indexOf(currentPath) != 0 ) {
+			continue
+		}
+		
+		// does current localStorage item exists (not deleted)?
+		var exists = false
+		
+		// checking, if current localStorage item is present on current location (page):
+		for( var i = 0; i < existingPaths.length; i++ ) {
+			var existingPath = existingPaths[i]
+			if( storedPath.indexOf(existingPath) == 0 ) {
+				exists = true
+				break
+			}
+		}
+		
+		// removing deleted file-system items from localStorage:
+		if( !exists ) {
+			localStorage.removeItem(key)
+		}
+		
+	}
+	
+	// capturing "star" and "clear-storage" clicks:
+	httpfsx.addEventListener('click', function(event) {
+		
+		if( event.target.classList.contains('star') ) {
+			
+			var star = event.target
+			
+			var starKey = star.getAttribute('data-httpfsx-star-key')
+			
+			// toggle starring status:
+			if( localStorage.getItem(starKey) ) {
+				localStorage.removeItem(starKey)
+				star.classList.remove('active')
+			} else {
+				localStorage.setItem(starKey, 'T')
+				star.classList.add('active')
+			}
+			
+		} else if( event.target.classList.contains('clear-storage') ) {
+			
+			// confirm and clear localStorage:
+			if( confirm('Clear storage?') ) {
+				
+				localStorage.clear()
+				
+				// apply loosing stars to UI:
+				var stars = httpfsx.querySelectorAll('.star')
+				for( var i = 0; i < stars.length; i++ ) {
+					var star = stars[i]
+					star.classList.remove('active')
+				}
+				
+				alert('Storage cleared')
+			}
+			
+		}
+		
+	})
+	
+})()
 
 `
