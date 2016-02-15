@@ -130,7 +130,7 @@ func main() {
 
 	server := fasthttp.Server{
 		Handler:              handler,
-		Name:                 "httpfsx v0.0.2", // TODO: don't forget to change this before creating release!
+		Name:                 "httpfsx v0.0.3", // TODO: don't forget to change this before creating release!
 		Concurrency:          int(config.FasthttpConcurrency),
 		ReadBufferSize:       int(config.FasthttpReadBufferSize),
 		WriteBufferSize:      int(config.FasthttpWriteBufferSize),
