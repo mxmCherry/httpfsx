@@ -11,12 +11,9 @@ package main
 import (
 	flag "flag"
 	html "html"
-	io "io"
 	ioutil "io/ioutil"
 	log "log"
-	mime "mime"
 	net "net"
-	http "net/http"
 	url "net/url"
 	os "os"
 	path "path"
@@ -180,6 +177,19 @@ func decomposeOsError(err error) (string, int) {
 // ----------------------------------------------------------------------------
 
 func makeHandler(root string) fasthttp.RequestHandler {
+
+	fs := fasthttp.FS{
+		Root:               root,
+		IndexNames:         nil,
+		GenerateIndexPages: false,
+		Compress:           false,
+		AcceptByteRange:    true,
+		PathRewrite:        nil,
+		CacheDuration:      0,
+	}
+
+	fsHandler := fs.NewRequestHandler()
+
 	return func(ctx *fasthttp.RequestCtx) {
 
 		relPath := path.Join("/", string(ctx.Path())) // relative file-system item path
@@ -268,44 +278,7 @@ func makeHandler(root string) fasthttp.RequestHandler {
 
 		// serve file:
 
-		// try relatively lightweight MIME (Content-Type) detection first (by file extension):
-		mimeType := mime.TypeByExtension(path.Ext(absPath))
-
-		if mimeType != "" {
-			ctx.SetContentType(mimeType)
-			ctx.SendFile(absPath)
-			return
-		}
-
-		// if MIME detection by extension failed, let's do some magic:
-
-		// we'll need to read ~ 512 bytes from file:
-		file, err := os.Open(absPath)
-		if err != nil {
-			ctx.Error(decomposeOsError(err))
-			return
-		}
-
-		// read file "prefix" (512 byte):
-		buf := make([]byte, 512)
-		_, err = file.Read(buf)
-		if err != nil && err != io.EOF {
-			ctx.Error(decomposeOsError(err))
-			return
-		}
-
-		// rewind file back to it's beginning (to send whole file down the code):
-		_, err = file.Seek(0, os.SEEK_SET)
-		if err != nil {
-			ctx.Error(decomposeOsError(err))
-			return
-		}
-
-		// magic:
-		mimeType = http.DetectContentType(buf)
-
-		ctx.SetContentType(mimeType)
-		ctx.SetBodyStream(file, int(stats.Size()))
+		fsHandler(ctx)
 
 	}
 
