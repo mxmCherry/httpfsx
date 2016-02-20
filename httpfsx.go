@@ -9,26 +9,25 @@ Basic usage:
 package main
 
 import (
-	flag "flag"
-	html "html"
-	ioutil "io/ioutil"
-	log "log"
-	net "net"
-	url "net/url"
-	os "os"
-	path "path"
-	regexp "regexp"
-	strings "strings"
-	time "time"
-)
+	"flag"
+	"html"
+	"io/ioutil"
+	"log"
+	"net"
+	"net/url"
+	"os"
+	"path"
+	"regexp"
+	"strings"
+	"time"
 
-import (
-	humanize "github.com/dustin/go-humanize"
-	fasthttp "github.com/valyala/fasthttp"
+	"github.com/dustin/go-humanize"
+	"github.com/valyala/fasthttp"
 )
 
 // ----------------------------------------------------------------------------
 
+// Config holds all the data, needed to bootstrap an application.
 type Config struct {
 	Addr string // address to serve on
 	Root string // public root directory path
@@ -130,7 +129,7 @@ func main() {
 
 	server := fasthttp.Server{
 		Handler:              handler,
-		Name:                 "httpfsx v0.0.3", // TODO: don't forget to change this before creating release!
+		Name:                 "httpfsx v0.0.4", // TODO: don't forget to change this before creating release!
 		Concurrency:          int(config.FasthttpConcurrency),
 		ReadBufferSize:       int(config.FasthttpReadBufferSize),
 		WriteBufferSize:      int(config.FasthttpWriteBufferSize),
@@ -160,7 +159,7 @@ func main() {
 
 // ----------------------------------------------------------------------------
 
-// decomposeOsError tries to determine HTTP status, suitable for passed os.* error
+// decomposeOsError tries to determine HTTP status, suitable for passed os.* error.
 func decomposeOsError(err error) (string, int) {
 
 	if os.IsNotExist(err) {
@@ -176,20 +175,8 @@ func decomposeOsError(err error) (string, int) {
 
 // ----------------------------------------------------------------------------
 
+// makeHandler generates new fasthttp handler closure for given root path.
 func makeHandler(root string) fasthttp.RequestHandler {
-
-	fs := fasthttp.FS{
-		Root:               root,
-		IndexNames:         nil,
-		GenerateIndexPages: false,
-		Compress:           false,
-		AcceptByteRange:    true,
-		PathRewrite:        nil,
-		CacheDuration:      0,
-	}
-
-	fsHandler := fs.NewRequestHandler()
-
 	return func(ctx *fasthttp.RequestCtx) {
 
 		relPath := path.Join("/", string(ctx.Path())) // relative file-system item path
@@ -277,11 +264,9 @@ func makeHandler(root string) fasthttp.RequestHandler {
 		}
 
 		// serve file:
-
-		fsHandler(ctx)
+		ctx.SendFile(absPath)
 
 	}
-
 }
 
 // ----------------------------------------------------------------------------
