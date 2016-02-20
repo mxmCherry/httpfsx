@@ -17,6 +17,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -96,15 +97,15 @@ func main() {
 	}
 
 	// determining absolute public root path (to be informative; also, this allows to provide non-empty header for root location):
-	config.Root = path.Clean(config.Root)
-	if !path.IsAbs(config.Root) {
+	config.Root = filepath.Clean(config.Root)
+	if !filepath.IsAbs(config.Root) {
 		wd, err := os.Getwd()
 		if err != nil {
 			os.Stderr.WriteString(err.Error() + "\n")
 			os.Exit(1)
 			return
 		}
-		config.Root = path.Join(wd, config.Root)
+		config.Root = filepath.Join(wd, config.Root)
 	}
 
 	// parsing address string (decompose it into schema + host):
@@ -129,7 +130,7 @@ func main() {
 
 	server := fasthttp.Server{
 		Handler:              handler,
-		Name:                 "httpfsx v0.0.4", // TODO: don't forget to change this before creating release!
+		Name:                 "httpfsx v0.0.5", // TODO: don't forget to change this before creating release!
 		Concurrency:          int(config.FasthttpConcurrency),
 		ReadBufferSize:       int(config.FasthttpReadBufferSize),
 		WriteBufferSize:      int(config.FasthttpWriteBufferSize),
@@ -179,8 +180,8 @@ func decomposeOsError(err error) (string, int) {
 func makeHandler(root string) fasthttp.RequestHandler {
 	return func(ctx *fasthttp.RequestCtx) {
 
-		relPath := path.Join("/", string(ctx.Path())) // relative file-system item path
-		absPath := path.Join(root, relPath)           // absolute file-system item path
+		relPath := path.Join("/", string(ctx.Path())) // relative request item path
+		absPath := filepath.Join(root, relPath)       // absolute file-system item path
 
 		// check if requested item exists and what is it's type:
 		stats, err := os.Stat(absPath)
