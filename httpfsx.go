@@ -20,7 +20,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/dustin/go-humanize"
 	"github.com/valyala/fasthttp"
@@ -32,18 +31,6 @@ import (
 type Config struct {
 	Addr string // address to serve on
 	Root string // public root directory path
-
-	FasthttpConcurrency          uint64 // the maximum number of concurrent connections the server may serve
-	FasthttpReadBufferSize       uint64 // per-connection buffer size for requests' reading. This also limits the maximum header size; bytes
-	FasthttpWriteBufferSize      uint64 // per-connection buffer size for responses' writing; bytes
-	FasthttpReadTimeout          uint64 // maximum duration for full request reading (including body); milliseconds
-	FasthttpWriteTimeout         uint64 // maximum duration for full response writing (including body); milliseconds
-	FasthttpMaxConnsPerIP        uint64 // maximum number of concurrent client connections allowed per IP
-	FasthttpMaxRequestsPerConn   uint64 // maximum number of requests served per connection
-	FasthttpMaxKeepaliveDuration uint64 // maximum keep-alive connection lifetime; milliseconds
-	FasthttpMaxRequestBodySize   uint64 // maximum request body size; bytes
-	FasthttpReduceMemoryUsage    bool   // aggressively reduces memory usage at the cost of higher CPU usage if set to true
-	FasthttpGetOnly              bool   // rejects all non-GET requests if set to true
 }
 
 // ----------------------------------------------------------------------------
@@ -55,37 +42,11 @@ func main() {
 	config := Config{
 		Addr: "tcp://127.0.0.1:1024",
 		Root: "./",
-
-		FasthttpConcurrency:          0,
-		FasthttpReadBufferSize:       0,
-		FasthttpWriteBufferSize:      0,
-		FasthttpReadTimeout:          0,
-		FasthttpWriteTimeout:         0,
-		FasthttpMaxConnsPerIP:        0,
-		FasthttpMaxRequestsPerConn:   0,
-		FasthttpMaxKeepaliveDuration: 0,
-		FasthttpMaxRequestBodySize:   0,
-		FasthttpReduceMemoryUsage:    false,
-		FasthttpGetOnly:              true,
 	}
 
 	flagSet := flag.NewFlagSet("main", flag.ExitOnError)
-
 	flagSet.StringVar(&config.Addr, "addr", config.Addr, "Address to serve on")
 	flagSet.StringVar(&config.Root, "root", config.Root, "Public root directory path")
-
-	flagSet.Uint64Var(&config.FasthttpConcurrency, "fasthttp-concurrency", config.FasthttpConcurrency, "The maximum number of concurrent connections the server may serve")
-	flagSet.Uint64Var(&config.FasthttpReadBufferSize, "fasthttp-read-buffer-size", config.FasthttpReadBufferSize, "Per-connection buffer size for requests' reading. This also limits the maximum header size; bytes")
-	flagSet.Uint64Var(&config.FasthttpWriteBufferSize, "fasthttp-write-buffer-size", config.FasthttpWriteBufferSize, "Per-connection buffer size for responses' writing; bytes")
-	flagSet.Uint64Var(&config.FasthttpReadTimeout, "fasthttp-read-timeout", config.FasthttpReadTimeout, "Maximum duration for full request reading (including body); milliseconds")
-	flagSet.Uint64Var(&config.FasthttpWriteTimeout, "fasthttp-write-timeout", config.FasthttpWriteTimeout, "Maximum duration for full response writing (including body); milliseconds")
-	flagSet.Uint64Var(&config.FasthttpMaxConnsPerIP, "fasthttp-max-conns-per-ip", config.FasthttpMaxConnsPerIP, "Maximum number of concurrent client connections allowed per IP")
-	flagSet.Uint64Var(&config.FasthttpMaxRequestsPerConn, "fasthttp-max-requests-per-conn", config.FasthttpMaxRequestsPerConn, "Maximum number of requests served per connection")
-	flagSet.Uint64Var(&config.FasthttpMaxKeepaliveDuration, "fasthttp-max-keepalive-duration", config.FasthttpMaxKeepaliveDuration, "Maximum keep-alive connection lifetime; milliseconds")
-	flagSet.Uint64Var(&config.FasthttpMaxRequestBodySize, "fasthttp-max-request-body-size", config.FasthttpMaxRequestBodySize, "Maximum request body size; bytes")
-	flagSet.BoolVar(&config.FasthttpReduceMemoryUsage, "fasthttp-reduce-memory-usage", config.FasthttpReduceMemoryUsage, "Aggressively reduces memory usage at the cost of higher CPU usage if set to true")
-	flagSet.BoolVar(&config.FasthttpGetOnly, "fasthttp-get-only", config.FasthttpGetOnly, "Rejects all non-GET requests if set to true")
-
 	flagSet.Parse(os.Args[1:])
 
 	// validating addr to provide more informative error message (http.Listen is not so detailed):
@@ -129,20 +90,10 @@ func main() {
 	handler := makeHandler(config.Root)
 
 	server := fasthttp.Server{
-		Handler:              handler,
-		Name:                 "httpfsx v0.0.5", // TODO: don't forget to change this before creating release!
-		Concurrency:          int(config.FasthttpConcurrency),
-		ReadBufferSize:       int(config.FasthttpReadBufferSize),
-		WriteBufferSize:      int(config.FasthttpWriteBufferSize),
-		ReadTimeout:          time.Millisecond * time.Duration(config.FasthttpReadTimeout),
-		WriteTimeout:         time.Millisecond * time.Duration(config.FasthttpWriteTimeout),
-		MaxConnsPerIP:        int(config.FasthttpMaxConnsPerIP),
-		MaxRequestsPerConn:   int(config.FasthttpMaxRequestsPerConn),
-		MaxKeepaliveDuration: time.Millisecond * time.Duration(config.FasthttpMaxKeepaliveDuration),
-		MaxRequestBodySize:   int(config.FasthttpMaxRequestBodySize),
-		ReduceMemoryUsage:    config.FasthttpReduceMemoryUsage,
-		GetOnly:              config.FasthttpGetOnly,
-		Logger:               logger,
+		Handler: handler,
+		Name:    "httpfsx v0.0.6", // TODO: don't forget to change this before creating release!
+		GetOnly: true,
+		Logger:  logger,
 	}
 
 	// notify user about current settings:
@@ -155,7 +106,6 @@ func main() {
 		os.Exit(1)
 		return
 	}
-
 }
 
 // ----------------------------------------------------------------------------
@@ -178,6 +128,13 @@ func decomposeOsError(err error) (string, int) {
 
 // makeHandler generates new fasthttp handler closure for given root path.
 func makeHandler(root string) fasthttp.RequestHandler {
+	fs := &fasthttp.FS{
+		Root:            root,
+		Compress:        false,
+		AcceptByteRange: true,
+	}
+	fsHandler := fs.NewRequestHandler()
+
 	return func(ctx *fasthttp.RequestCtx) {
 
 		relPath := path.Join("/", string(ctx.Path())) // relative request item path
@@ -265,8 +222,7 @@ func makeHandler(root string) fasthttp.RequestHandler {
 		}
 
 		// serve file:
-		ctx.SendFile(absPath)
-
+		fsHandler(ctx)
 	}
 }
 
