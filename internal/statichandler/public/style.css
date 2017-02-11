@@ -1,0 +1,74 @@
+.httpfsx {
+	font-family: sans-serif;
+}
+
+.httpfsx a {
+	text-decoration: none;
+}
+
+.httpfsx .header {
+	margin: 0;
+	padding: 0.5cm 0;
+	font-size: 1cm;
+}
+
+.httpfsx .list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.httpfsx .list .item .star {
+	display: inline-block;
+	width: 1cm;
+	height: 1cm;
+	font-size: 1cm;
+	line-height: 1cm;
+	text-align: center;
+	vertical-align: middle;
+	color: #808080;
+}
+
+.httpfsx .list .item .star.active {
+	color: #8B0000;
+}
+
+.httpfsx .list .item .link {
+	display: inline-block;
+	width: calc(100% - 1cm - 0.5cm);
+	min-height: 1cm;
+	padding: 0;
+	vertical-align: top;
+}
+
+.httpfsx .list .item .link .name {
+	font-size: 0.5cm;
+	line-height: 0.6cm;
+	color: #101010;
+}
+
+.httpfsx .list .item .link .name::after {
+	color: #E0E0E0;
+}
+
+.httpfsx .list .item.dir .link .name::after {
+	content: " 📁";
+}
+
+.httpfsx .list .item .link .meta {
+	display: block;
+	font-size: 0.3cm;
+	line-height: 0.6cm;
+	color: #808080;
+}
+
+.httpfsx .footer {
+	font-size: 0.3cm;
+	line-height: 0.3cm;
+	text-align: right;
+	padding-top: 1cm;
+}
+
+.httpfsx .footer .clear-storage {
+	color: #808080;
+}

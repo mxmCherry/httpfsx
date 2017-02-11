@@ -7,6 +7,7 @@ import (
 
 	"github.com/mxmCherry/httpfsx/internal/filesystem"
 	"github.com/mxmCherry/httpfsx/internal/rawhandler"
+	"github.com/mxmCherry/httpfsx/internal/statichandler"
 	"github.com/mxmCherry/httpfsx/internal/uihandler"
 )
 
@@ -24,6 +25,7 @@ func main() {
 	fs := filesystem.New(*root)
 
 	mux := http.NewServeMux()
+	mux.Handle("/fs/static/", http.StripPrefix("/fs/static/", statichandler.New()))
 	mux.Handle("/fs/raw/", http.StripPrefix("/fs/raw", rawhandler.New(fs)))
 	mux.Handle("/fs/explore/", http.StripPrefix("/fs/explore", uihandler.New(fs)))
 
