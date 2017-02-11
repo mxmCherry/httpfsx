@@ -1,3 +1,11 @@
+/*
+
+Command httpfsx launches mobile-friendly HTTP file-system explorer (readonly)
+
+Basic usage:
+	httpfsx --addr=:1024 --root=$HOME/share
+
+*/
 package main
 
 import (
