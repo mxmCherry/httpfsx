@@ -11,5 +11,5 @@ go get -u github.com/mxmCherry/httpfsx
 # Running
 
 ```bash
-httpfsx --addr=tcp://:1024 --root=$HOME/share
+httpfsx --addr=:1024 --root=$HOME/share
 ```
