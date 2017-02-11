@@ -1,19 +1,13 @@
-//go:generate statik -src=./public
+//go:generate go run ../../cmd/genstatic/main.go
 
 package statichandler
 
 import (
 	"net/http"
 
-	"github.com/rakyll/statik/fs"
-
-	_ "github.com/mxmCherry/httpfsx/internal/statichandler/statik"
+	"github.com/mxmCherry/httpfsx/internal/statichandler/static"
 )
 
 func New() http.Handler {
-	statikFS, err := fs.New()
-	if err != nil {
-		panic(err.Error())
-	}
-	return http.FileServer(statikFS)
+	return static.Handler
 }

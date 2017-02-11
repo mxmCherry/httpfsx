@@ -37,11 +37,11 @@ func main() {
 	mux.Handle("/fs/static/", http.StripPrefix("/fs/static/", statichandler.New()))
 	mux.Handle("/fs/raw/", http.StripPrefix("/fs/raw", rawhandler.New(fs)))
 
-	mux.Handle("/fs/explore/", http.StripPrefix("/fs/explore", uihandler.New(fs, uihandler.Config{
+	mux.Handle("/fs/explore/", uihandler.New(fs, uihandler.Config{
 		MountPath:  "/fs/explore/",
 		RawPath:    "/fs/raw/",
 		StaticPath: "/fs/static/",
-	})))
+	}))
 
 	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/fs/explore/", http.StatusTemporaryRedirect)
