@@ -1,4 +1,4 @@
-//go:generate go run ../../cmd/genstatic/main.go
+//go:generate gogenstatic
 
 package statichandler
 
@@ -9,5 +9,5 @@ import (
 )
 
 func New() http.Handler {
-	return static.Handler
+	return static.Handler()
 }
