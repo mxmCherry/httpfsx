@@ -12,10 +12,10 @@ import (
 )
 
 // modTime holds file modification (generation) time.
-var modTime = time.Unix(1486907153, 0)
+var modTime = time.Unix(1486915394, 0)
 
 // files hold static file index by normalized file path.
-var files map[string]file
+var files map[string]*file
 
 // readerPool is a pool for *bytes.Reader.
 var readerPool = sync.Pool{}
@@ -26,7 +26,7 @@ type file struct {
 }
 
 // ServeHTTP serves static file over HTTP.
-func (f file) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (f *file) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var buf *bytes.Reader
 	if v := readerPool.Get(); v == nil {
 		buf = bytes.NewReader(f.contents)
@@ -43,21 +43,13 @@ var handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	// normalize file path:
 	p := path.Join("/", r.URL.Path)
 
-	file, ok := files[p]
+	f, ok := files[p]
 	if !ok {
 		http.NotFound(w, r)
 		return
 	}
 
-	var buf *bytes.Reader
-	if v := readerPool.Get(); v == nil {
-		buf = bytes.NewReader(file.contents)
-	} else {
-		buf = v.(*bytes.Reader)
-		buf.Reset(file.contents)
-	}
-
-	http.ServeContent(w, r, path.Base(p), modTime, buf)
+	f.ServeHTTP(w, r)
 })
 
 // Handler returns handler for all embedded files.
@@ -78,8 +70,8 @@ func HandlerFor(filePath string) http.Handler {
 
 // init populates file index.
 func init() {
-	files = map[string]file{}
-	files["/script.js"] = file{
+	files = map[string]*file{}
+	files["/script.js"] = &file{
 		contents: []byte{
 			0x28, 0x66, 0x75, 0x6E, 0x63, 0x74, 0x69, 0x6F, 0x6E, 0x28, 0x29, 0x20, 0x7B,
 			0x0A, 0x09, 0x27, 0x75, 0x73, 0x65, 0x20, 0x73, 0x74, 0x72, 0x69, 0x63, 0x74,
@@ -307,7 +299,7 @@ func init() {
 			0x0A, 0x0A, 0x7D, 0x29, 0x28, 0x29, 0x0A,
 		},
 	}
-	files["/style.css"] = file{
+	files["/style.css"] = &file{
 		contents: []byte{
 			0x2E, 0x68, 0x74, 0x74, 0x70, 0x66, 0x73, 0x78, 0x20, 0x7B, 0x0A, 0x09, 0x66,
 			0x6F, 0x6E, 0x74, 0x2D, 0x66, 0x61, 0x6D, 0x69, 0x6C, 0x79, 0x3A, 0x20, 0x73,
