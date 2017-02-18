@@ -23,15 +23,15 @@ const tmplCode = `
 
 		</ul>
 		<footer class="footer">
-			<button class="clear-storage" href="javascript://">Clear storage</button>
+			<button class="clear-storage">Clear storage</button>
 		</footer>
 		<script type="text/javascript" src="{{ staticLink "/script.js" }}"></script>
 	<body>
 </html>
 
 {{ define "fsItemView" }}
-	<li class="item {{ fsType . }}">
-		<button class="star" href="javascript://">★</button>
+	<li class="item {{ fsType . }} {{ metaKind . }}">
+		<button class="star">★</button>
 		<a class="link" href="{{ fsLink . }}">
 			<span class="name">{{ .Name }}</span>
 			<small class="meta">{{ fsMeta . }}</small>

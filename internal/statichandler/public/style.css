@@ -29,6 +29,7 @@
 	color: #808080;
 	background: transparent;
 	border: none;
+	padding: 0;
 }
 
 .httpfsx .list .item .star.active {
