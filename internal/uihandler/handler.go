@@ -62,6 +62,14 @@ func New(fs *filesystem.FS, config Config) *Handler {
 				return ""
 			}
 		},
+		"metaKind": func(v interface{}) string {
+			switch x := v.(type) {
+			case filesystem.File:
+				return path.Dir(x.Mime)
+			default:
+				return ""
+			}
+		},
 	})
 
 	return &Handler{
