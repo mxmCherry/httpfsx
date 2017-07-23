@@ -3,10 +3,10 @@ package thumbnail
 import (
 	"net/http"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/gorilla/schema"
+	"github.com/mxmCherry/httpfsx/internal/filesystem"
 	"github.com/mxmCherry/httpfsx/internal/thumbnail"
 )
 
@@ -21,7 +21,7 @@ type options struct {
 
 func New(root string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		abs := filepath.Join(root, filepath.Join("/", r.URL.Path)) // TODO: extract into filesystem as standalone func
+		abs := filesystem.Abs(root, r.URL.Path)
 
 		var opt options
 		if err := schemaDecoder.Decode(&opt, r.URL.Query()); err != nil {
