@@ -1,17 +1,15 @@
-package imgthumbhandler_test
+package thumbnail_test
 
 import (
 	"image/jpeg"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"path/filepath"
 	"time"
 
-	. "github.com/mxmCherry/httpfsx/internal/imgthumbhandler"
+	. "github.com/mxmCherry/httpfsx/internal/handlers/thumbnail"
 
 	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 )
 
@@ -21,9 +19,7 @@ var _ = Describe("Handler", func() {
 	var resp *httptest.ResponseRecorder
 
 	BeforeEach(func() {
-		subject = New(func(requestPath string) string {
-			return filepath.Join("testdata", requestPath)
-		})
+		subject = New("testdata")
 		req = httptest.NewRequest("GET", "/lenna.png?max_width=500&max_height=500", nil)
 		resp = httptest.NewRecorder()
 	})
@@ -42,16 +38,6 @@ var _ = Describe("Handler", func() {
 		subject.ServeHTTP(resp, httptest.NewRequest("GET", "/lenna.png", nil))
 		Expect(resp.Code).To(Equal(http.StatusBadRequest))
 	})
-
-	DescribeTable("return error if invalid jpeg_quality given",
-		func(quality string) {
-			subject.ServeHTTP(resp, httptest.NewRequest("GET", "/lenna.png?max_width=500&max_height=500&jpeg_quality="+quality, nil))
-			Expect(resp.Code).To(Equal(http.StatusBadRequest))
-		},
-		Entry("non-integer", "INVALID"),
-		Entry("negative", "-1"),
-		Entry("greater than 100", "101"),
-	)
 
 	It("should return error if file does not exist", func() {
 		subject.ServeHTTP(resp, httptest.NewRequest("GET", "/non-existing.png?max_width=500&max_height=500", nil))
@@ -84,9 +70,6 @@ var _ = Describe("Handler", func() {
 		Expect(size.X).To(Equal(500))
 		Expect(size.Y).To(Equal(500))
 	})
-
-	// TODO: would be nice to test if it resizes image proportionally etc.
-	// TODO: would be nice to test if jpeg_quality actually applied
 
 })
 

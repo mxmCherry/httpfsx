@@ -1,4 +1,4 @@
-package imgthumbhandler_test
+package thumbnail_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestImgthumbhandler(t *testing.T) {
+func TestThumbnail(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Imgthumbhandler Suite")
+	RunSpecs(t, "Thumbnail Suite")
 }

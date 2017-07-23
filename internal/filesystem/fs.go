@@ -3,12 +3,13 @@ package filesystem
 import (
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/mxmCherry/httpfsx/internal/mime"
 )
 
 type FS struct {
@@ -92,7 +93,7 @@ func (fs *FS) List(rel string) (*List, error) {
 					LastMod: fi.ModTime(),
 				})
 			} else {
-				mime, err := detectMime(filepath.Join(abs, name))
+				mime, err := mime.Detect(filepath.Join(abs, name))
 				if err != nil {
 					return nil, err
 				}
@@ -118,7 +119,7 @@ func (fs *FS) List(rel string) (*List, error) {
 		return nil, fmt.Errorf("filesystem: expected parent %s to be dir", parentPath)
 	}
 
-	mime, err := detectMime(abs)
+	mime, err := mime.Detect(abs)
 	if err != nil {
 		return nil, err
 	}
@@ -136,20 +137,4 @@ func (fs *FS) List(rel string) (*List, error) {
 		Mime:    mime,
 	})
 	return list, nil
-}
-
-func detectMime(abs string) (string, error) {
-	f, err := os.Open(abs)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-
-	buf := make([]byte, 512)
-	n, err := f.Read(buf)
-	if err != nil {
-		return "", err
-	}
-
-	return http.DetectContentType(buf[0:n]), nil
 }

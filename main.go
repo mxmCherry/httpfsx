@@ -14,7 +14,7 @@ import (
 	"os"
 
 	"github.com/mxmCherry/httpfsx/internal/filesystem"
-	"github.com/mxmCherry/httpfsx/internal/imgthumbhandler"
+	"github.com/mxmCherry/httpfsx/internal/handlers/thumbnail"
 	"github.com/mxmCherry/httpfsx/internal/rawhandler"
 	"github.com/mxmCherry/httpfsx/internal/statichandler"
 	"github.com/mxmCherry/httpfsx/internal/uihandler"
@@ -37,7 +37,7 @@ func main() {
 
 	mux.Handle("/fs/static/", http.StripPrefix("/fs/static/", statichandler.New()))
 	mux.Handle("/fs/raw/", http.StripPrefix("/fs/raw", rawhandler.New(fs)))
-	mux.Handle("/fs/thumb/", http.StripPrefix("/fs/thumb", imgthumbhandler.New(fs.Abs)))
+	mux.Handle("/thumb/", http.StripPrefix("/thumb", thumbnail.New(*root)))
 
 	mux.Handle("/fs/explore/", uihandler.New(fs, uihandler.Config{
 		MountPath:  "/fs/explore/",
