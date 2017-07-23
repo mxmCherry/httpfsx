@@ -14,6 +14,7 @@ type Options struct {
 	MaxWidth, MaxHeight uint
 	ImageQuality        float64
 	VideoOffset         float64
+	Strict              bool
 }
 
 func Thumbnail(w io.Writer, file string, opt *Options) error {
@@ -23,19 +24,30 @@ func Thumbnail(w io.Writer, file string, opt *Options) error {
 	}
 
 	switch path.Dir(mime) {
+
 	case "image":
 		return image.Thumbnail(w, file, &image.ThumbnailOptions{
 			MaxWidth:  opt.MaxWidth,
 			MaxHeight: opt.MaxHeight,
 			Quality:   opt.ImageQuality,
 		})
+
 	case "video":
+		if !opt.Strict && !video.Supported() {
+			_, err := w.Write(pixel)
+			return err
+		}
 		return video.Thumbnail(w, file, &video.ThumbnailOptions{
 			MaxWidth:  opt.MaxWidth,
 			MaxHeight: opt.MaxHeight,
 			Offset:    opt.VideoOffset,
 		})
+
 	}
-	// TODO: make this configurable - don't fail (render empty image?) for unsupported types.
-	return fmt.Errorf("thumbnail: unsupported file %s type: %s", file, mime)
+
+	if opt.Strict {
+		return fmt.Errorf("thumbnail: unsupported file %s type: %s", file, mime)
+	}
+	_, err = w.Write(pixel)
+	return err
 }

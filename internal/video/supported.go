@@ -8,3 +8,7 @@ func init() {
 	supported = exec.Command("avprobe", "-version").Run() == nil &&
 		exec.Command("avconv", "-version").Run() == nil
 }
+
+func Supported() bool {
+	return supported
+}
