@@ -1,4 +1,4 @@
-package uihandler
+package ui
 
 const tmplCode = `
 <!DOCTYPE html>

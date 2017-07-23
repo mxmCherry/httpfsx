@@ -1,4 +1,4 @@
-package uihandler
+package ui
 
 import (
 	"html/template"

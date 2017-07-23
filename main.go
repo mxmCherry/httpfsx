@@ -17,7 +17,7 @@ import (
 	"github.com/mxmCherry/httpfsx/internal/filesystem"
 	"github.com/mxmCherry/httpfsx/internal/handlers/static"
 	"github.com/mxmCherry/httpfsx/internal/handlers/thumbnail"
-	"github.com/mxmCherry/httpfsx/internal/uihandler"
+	"github.com/mxmCherry/httpfsx/internal/handlers/ui"
 )
 
 var flags struct {
@@ -55,7 +55,7 @@ func run() error {
 	mux.Handle("/files/", http.StripPrefix("/files", http.FileServer(http.Dir(flags.root))))
 	mux.Handle("/thumb/", http.StripPrefix("/thumb", thumbnail.New(flags.root)))
 
-	mux.Handle("/index/", uihandler.New(fs, uihandler.Config{
+	mux.Handle("/index/", ui.New(fs, ui.Config{
 		MountPath:  "/index/",
 		RawPath:    "/files/",
 		StaticPath: "/static/",
