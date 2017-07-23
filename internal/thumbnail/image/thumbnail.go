@@ -12,7 +12,12 @@ import (
 	_ "image/png"
 )
 
-func Thumbnail(w io.Writer, width, height uint, jpegQuality int, filename string) error {
+type ThumbnailOptions struct {
+	MaxWidth, MaxHeight uint
+	Quality             float64
+}
+
+func Thumbnail(w io.Writer, filename string, opt *ThumbnailOptions) error {
 	file, err := os.Open(filename)
 	if err != nil {
 		return err
@@ -25,8 +30,17 @@ func Thumbnail(w io.Writer, width, height uint, jpegQuality int, filename string
 	}
 	_ = file.Close()
 
-	thumb := resize.Thumbnail(width, height, img, resize.Lanczos3)
+	maxWidth, maxHeight := opt.MaxWidth, opt.MaxHeight
+	size := img.Bounds().Max
+	if maxWidth == 0 {
+		maxWidth = uint(size.X)
+	}
+	if maxHeight == 0 {
+		maxHeight = uint(size.Y)
+	}
+
+	thumb := resize.Thumbnail(maxWidth, maxHeight, img, resize.Lanczos3)
 	return jpeg.Encode(w, thumb, &jpeg.Options{
-		Quality: jpegQuality,
+		Quality: int(opt.Quality * 100),
 	})
 }

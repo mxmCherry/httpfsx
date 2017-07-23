@@ -24,7 +24,11 @@ func Thumbnail(w io.Writer, file string, opt *Options) error {
 
 	switch path.Dir(mime) {
 	case "image":
-		return image.Thumbnail(w, opt.MaxWidth, opt.MaxHeight, int(opt.ImageQuality*100), file)
+		return image.Thumbnail(w, file, &image.ThumbnailOptions{
+			MaxWidth:  opt.MaxWidth,
+			MaxHeight: opt.MaxHeight,
+			Quality:   opt.ImageQuality,
+		})
 	case "video":
 		return video.Thumbnail(w, file, &video.ThumbnailOptions{
 			MaxWidth:  opt.MaxWidth,
