@@ -15,9 +15,8 @@ import (
 	"path/filepath"
 
 	"github.com/mxmCherry/httpfsx/internal/filesystem"
+	"github.com/mxmCherry/httpfsx/internal/handlers/static"
 	"github.com/mxmCherry/httpfsx/internal/handlers/thumbnail"
-	"github.com/mxmCherry/httpfsx/internal/rawhandler"
-	"github.com/mxmCherry/httpfsx/internal/statichandler"
 	"github.com/mxmCherry/httpfsx/internal/uihandler"
 )
 
@@ -52,18 +51,18 @@ func run() error {
 
 	mux := http.NewServeMux()
 
-	mux.Handle("/fs/static/", http.StripPrefix("/fs/static/", statichandler.New()))
-	mux.Handle("/fs/raw/", http.StripPrefix("/fs/raw", rawhandler.New(fs)))
+	mux.Handle("/static/", http.StripPrefix("/static", static.New()))
+	mux.Handle("/files/", http.StripPrefix("/files", http.FileServer(http.Dir(flags.root))))
 	mux.Handle("/thumb/", http.StripPrefix("/thumb", thumbnail.New(flags.root)))
 
-	mux.Handle("/fs/explore/", uihandler.New(fs, uihandler.Config{
-		MountPath:  "/fs/explore/",
-		RawPath:    "/fs/raw/",
-		StaticPath: "/fs/static/",
+	mux.Handle("/index/", uihandler.New(fs, uihandler.Config{
+		MountPath:  "/index/",
+		RawPath:    "/files/",
+		StaticPath: "/static/",
 	}))
 
 	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/fs/explore/", http.StatusTemporaryRedirect)
+		http.Redirect(w, r, "/index/", http.StatusTemporaryRedirect)
 	}))
 
 	return http.ListenAndServe(flags.addr, mux)

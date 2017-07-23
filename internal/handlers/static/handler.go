@@ -1,11 +1,11 @@
 //go:generate gogenstatic
 
-package statichandler
+package static
 
 import (
 	"net/http"
 
-	"github.com/mxmCherry/httpfsx/internal/statichandler/static"
+	"github.com/mxmCherry/httpfsx/internal/handlers/static/static"
 )
 
 func New() http.Handler {
