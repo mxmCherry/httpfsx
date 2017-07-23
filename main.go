@@ -12,6 +12,7 @@ import (
 	"flag"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/mxmCherry/httpfsx/internal/filesystem"
 	"github.com/mxmCherry/httpfsx/internal/handlers/thumbnail"
@@ -20,24 +21,40 @@ import (
 	"github.com/mxmCherry/httpfsx/internal/uihandler"
 )
 
+var flags struct {
+	addr string
+	root string
+}
+
+func init() {
+	flag.StringVar(&flags.addr, "addr", ":1024", "listen addr")
+	flag.StringVar(&flags.root, "root", ":1024", "public dir")
+}
+
 func main() {
-	wd, err := os.Getwd()
-	if err != nil {
-		panic(err.Error())
+	flag.Parse()
+	if err := run(); err != nil {
+		os.Stderr.WriteString(err.Error() + "\n")
+		os.Exit(1)
+	}
+}
+
+func run() error {
+	if !filepath.IsAbs(flags.root) {
+		wd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		flags.root = filepath.Join(wd, flags.root)
 	}
 
-	addr := flag.String("addr", ":1024", "listen addr")
-	root := flag.String("root", wd, "root dir")
-
-	flag.Parse()
-
-	fs := filesystem.New(*root)
+	fs := filesystem.New(flags.root)
 
 	mux := http.NewServeMux()
 
 	mux.Handle("/fs/static/", http.StripPrefix("/fs/static/", statichandler.New()))
 	mux.Handle("/fs/raw/", http.StripPrefix("/fs/raw", rawhandler.New(fs)))
-	mux.Handle("/thumb/", http.StripPrefix("/thumb", thumbnail.New(*root)))
+	mux.Handle("/thumb/", http.StripPrefix("/thumb", thumbnail.New(flags.root)))
 
 	mux.Handle("/fs/explore/", uihandler.New(fs, uihandler.Config{
 		MountPath:  "/fs/explore/",
@@ -49,8 +66,5 @@ func main() {
 		http.Redirect(w, r, "/fs/explore/", http.StatusTemporaryRedirect)
 	}))
 
-	err = http.ListenAndServe(*addr, mux)
-	if err != nil {
-		panic(err.Error())
-	}
+	return http.ListenAndServe(flags.addr, mux)
 }
