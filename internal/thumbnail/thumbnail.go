@@ -5,8 +5,8 @@ import (
 	"io"
 	"path"
 
+	"github.com/mxmCherry/httpfsx/internal/image"
 	"github.com/mxmCherry/httpfsx/internal/mime"
-	"github.com/mxmCherry/httpfsx/internal/thumbnail/image"
 	"github.com/mxmCherry/httpfsx/internal/video"
 )
 

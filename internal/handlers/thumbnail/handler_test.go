@@ -34,11 +34,6 @@ var _ = Describe("Handler", func() {
 		Expect(resp.Code).To(Equal(http.StatusBadRequest))
 	})
 
-	It("should return error if no max dimensions given", func() {
-		subject.ServeHTTP(resp, httptest.NewRequest("GET", "/lenna.png", nil))
-		Expect(resp.Code).To(Equal(http.StatusBadRequest))
-	})
-
 	It("should return error if file does not exist", func() {
 		subject.ServeHTTP(resp, httptest.NewRequest("GET", "/non-existing.png?w=500&h=500", nil))
 		Expect(resp.Code).To(Equal(http.StatusNotFound))
