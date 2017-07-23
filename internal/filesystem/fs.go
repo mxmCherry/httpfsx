@@ -143,6 +143,7 @@ func detectMime(abs string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	defer f.Close()
 
 	buf := make([]byte, 512)
 	n, err := f.Read(buf)
