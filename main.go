@@ -14,7 +14,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/mxmCherry/httpfsx/internal/filesystem"
 	"github.com/mxmCherry/httpfsx/internal/handlers/static"
 	"github.com/mxmCherry/httpfsx/internal/handlers/thumbnail"
 	"github.com/mxmCherry/httpfsx/internal/handlers/ui"
@@ -47,15 +46,13 @@ func run() error {
 		flags.root = filepath.Join(wd, flags.root)
 	}
 
-	fs := filesystem.New(flags.root)
-
 	mux := http.NewServeMux()
 
 	mux.Handle("/static/", http.StripPrefix("/static", static.New()))
 	mux.Handle("/files/", http.StripPrefix("/files", http.FileServer(http.Dir(flags.root))))
 	mux.Handle("/thumb/", http.StripPrefix("/thumb", thumbnail.New(flags.root)))
 
-	mux.Handle("/index/", ui.New(fs, ui.Config{
+	mux.Handle("/index/", ui.New(flags.root, ui.Config{
 		MountPath:  "/index/",
 		RawPath:    "/files/",
 		StaticPath: "/static/",

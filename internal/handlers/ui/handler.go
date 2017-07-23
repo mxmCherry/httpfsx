@@ -13,7 +13,7 @@ import (
 
 type Handler struct {
 	config Config
-	fs     *filesystem.FS
+	root   string
 	tmpl   *template.Template
 }
 
@@ -23,7 +23,7 @@ type Config struct {
 	StaticPath string
 }
 
-func New(fs *filesystem.FS, config Config) *Handler {
+func New(root string, config Config) *Handler {
 	config.MountPath = path.Clean(config.MountPath)
 	config.RawPath = path.Clean(config.RawPath)
 	config.StaticPath = path.Clean(config.StaticPath)
@@ -74,7 +74,7 @@ func New(fs *filesystem.FS, config Config) *Handler {
 
 	return &Handler{
 		config: config,
-		fs:     fs,
+		root:   root,
 		tmpl:   template.Must(tmpl.Parse(tmplCode)),
 	}
 }
@@ -84,7 +84,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		List *filesystem.List
 	}
 
-	list, err := h.fs.List(strings.TrimPrefix(r.URL.Path, h.config.MountPath))
+	list, err := filesystem.Ls(h.root, strings.TrimPrefix(r.URL.Path, h.config.MountPath))
 	if err != nil {
 		if os.IsNotExist(err) {
 			http.Error(w, err.Error(), http.StatusNotFound)

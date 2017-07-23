@@ -12,10 +12,6 @@ import (
 	"github.com/mxmCherry/httpfsx/internal/mime"
 )
 
-type FS struct {
-	root string
-}
-
 type List struct {
 	Parent Dir
 	Dirs   []Dir
@@ -36,28 +32,14 @@ type File struct {
 	Mime    string
 }
 
-func New(root string) *FS {
-	return &FS{
-		root: filepath.Clean(root),
-	}
-}
-
-func (fs *FS) Abs(rel string) string {
+func Abs(root, rel string) string {
 	rel = path.Join("/", rel)
-	return filepath.Join(fs.root, rel)
+	return filepath.Join(root, rel)
 }
 
-func (fs *FS) IsFile(rel string) bool {
-	stat, err := os.Stat(fs.Abs(rel))
-	if err != nil {
-		return false
-	}
-	return !stat.IsDir()
-}
-
-func (fs *FS) List(rel string) (*List, error) {
+func Ls(root, rel string) (*List, error) {
 	rel = path.Join("/", rel)
-	abs := filepath.Join(fs.root, rel)
+	abs := filepath.Join(root, rel)
 
 	stat, err := os.Lstat(abs)
 	if err != nil {
@@ -111,7 +93,7 @@ func (fs *FS) List(rel string) (*List, error) {
 	}
 
 	parentPath := path.Dir(rel)
-	parentStat, err := os.Stat(filepath.Join(fs.root, parentPath))
+	parentStat, err := os.Stat(filepath.Join(root, parentPath))
 	if err != nil {
 		return nil, err
 	}

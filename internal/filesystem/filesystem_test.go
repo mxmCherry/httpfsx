@@ -10,20 +10,16 @@ import (
 )
 
 var _ = Describe("Fs", func() {
-	var subject *FS
-
-	BeforeEach(func() {
-		subject = New("testdata/root")
-	})
+	root := "testdata/root"
 
 	It("should return error for inexisting entities", func() {
-		list, err := subject.List("/inexisting")
+		list, err := Ls(root, "/inexisting")
 		Expect(err).To(HaveOccurred())
 		Expect(list).To(BeNil())
 	})
 
 	It("should restrict to root dir", func() {
-		list, err := subject.List("../../") // references testdata dir
+		list, err := Ls(root, "../../") // references testdata dir
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(list.Parent.Path).To(Equal("/"))
@@ -36,7 +32,7 @@ var _ = Describe("Fs", func() {
 	})
 
 	It("should list root dir", func() {
-		list, err := subject.List("/")
+		list, err := Ls(root, "/")
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(list.Parent.Name).To(Equal("root"))
@@ -57,7 +53,7 @@ var _ = Describe("Fs", func() {
 	})
 
 	It("should list dir", func() {
-		list, err := subject.List("/dir")
+		list, err := Ls(root, "/dir")
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(list.Parent.Name).To(Equal("dir"))
@@ -78,7 +74,7 @@ var _ = Describe("Fs", func() {
 	})
 
 	It("should describe file", func() {
-		list, err := subject.List("/dir/dir-file.txt")
+		list, err := Ls(root, "/dir/dir-file.txt")
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(list.Parent.Name).To(Equal("dir"))
@@ -97,19 +93,10 @@ var _ = Describe("Fs", func() {
 
 	DescribeTable("Abs",
 		func(rel, expected string) {
-			Expect(subject.Abs(rel)).To(Equal(expected))
+			Expect(Abs(root, rel)).To(Equal(expected))
 		},
 		Entry("simple path", "/what/ever", "testdata/root/what/ever"),
 		Entry("resolve dots", "../../../what/ever/..", "testdata/root/what"),
 	)
 
-	DescribeTable("IsFile",
-		func(rel string, expected bool) {
-			Expect(subject.IsFile(rel)).To(Equal(expected))
-		},
-		Entry("file", "/file.txt", true),
-		Entry("dir", "/dir", false),
-		Entry("root dir", "/", false),
-		Entry("inexisting", "/inexisting", false),
-	)
 })
