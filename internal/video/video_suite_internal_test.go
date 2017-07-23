@@ -1,4 +1,4 @@
-package video_test
+package video
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -9,5 +9,5 @@ import (
 
 func TestVideo(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Video Suite")
+	RunSpecs(t, "Video Suite (internal)")
 }

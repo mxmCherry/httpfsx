@@ -20,17 +20,17 @@ var _ = Describe("Handler", func() {
 
 	BeforeEach(func() {
 		subject = New("testdata")
-		req = httptest.NewRequest("GET", "/lenna.png?max_width=500&max_height=500", nil)
+		req = httptest.NewRequest("GET", "/lenna.png?w=500&h=500", nil)
 		resp = httptest.NewRecorder()
 	})
 
-	It("should return error if bad max_width given", func() {
-		subject.ServeHTTP(resp, httptest.NewRequest("GET", "/lenna.png?max_width=INVALID&max_height=500", nil))
+	It("should return error if bad w given", func() {
+		subject.ServeHTTP(resp, httptest.NewRequest("GET", "/lenna.png?w=INVALID&h=500", nil))
 		Expect(resp.Code).To(Equal(http.StatusBadRequest))
 	})
 
-	It("should return error if bad max_height given", func() {
-		subject.ServeHTTP(resp, httptest.NewRequest("GET", "/lenna.png?max_width=500&max_height=INVALID", nil))
+	It("should return error if bad h given", func() {
+		subject.ServeHTTP(resp, httptest.NewRequest("GET", "/lenna.png?w=500&h=INVALID", nil))
 		Expect(resp.Code).To(Equal(http.StatusBadRequest))
 	})
 
@@ -40,7 +40,7 @@ var _ = Describe("Handler", func() {
 	})
 
 	It("should return error if file does not exist", func() {
-		subject.ServeHTTP(resp, httptest.NewRequest("GET", "/non-existing.png?max_width=500&max_height=500", nil))
+		subject.ServeHTTP(resp, httptest.NewRequest("GET", "/non-existing.png?w=500&h=500", nil))
 		Expect(resp.Code).To(Equal(http.StatusNotFound))
 	})
 
