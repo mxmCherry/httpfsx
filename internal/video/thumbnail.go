@@ -1,6 +1,7 @@
 package video
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os/exec"
@@ -14,7 +15,7 @@ type ThumbnailOptions struct {
 	Offset float64
 }
 
-func Thumbnail(w io.Writer, file string, opt *ThumbnailOptions) error {
+func Thumbnail(ctx context.Context, w io.Writer, file string, opt *ThumbnailOptions) error {
 	if opt.Offset > 1 || opt.Offset < -1 {
 		return fmt.Errorf("video: offset must be within -1..1 range")
 	}
@@ -22,7 +23,7 @@ func Thumbnail(w io.Writer, file string, opt *ThumbnailOptions) error {
 		opt.Offset = 1 - opt.Offset
 	}
 
-	dur, err := videoDuration(file)
+	dur, err := videoDuration(ctx, file)
 	if err != nil {
 		return err
 	}
@@ -31,7 +32,8 @@ func Thumbnail(w io.Writer, file string, opt *ThumbnailOptions) error {
 	maxWidth := strconv.FormatUint(uint64(opt.MaxWidth), 10)
 	maxHeight := strconv.FormatUint(uint64(opt.MaxHeight), 10)
 
-	cmd := exec.Command(
+	cmd := exec.CommandContext(
+		ctx,
 		"avconv",
 		"-i", file,
 		"-ss", formatDuration(offsetDur),

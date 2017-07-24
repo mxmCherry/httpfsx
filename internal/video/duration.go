@@ -2,6 +2,7 @@ package video
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os/exec"
 	"time"
@@ -36,8 +37,8 @@ func formatDuration(d time.Duration) string {
 	return zeroTime.Add(d).Format(durationFormat)
 }
 
-func videoDuration(file string) (time.Duration, error) {
-	out, err := exec.Command("avprobe", file).CombinedOutput()
+func videoDuration(ctx context.Context, file string) (time.Duration, error) {
+	out, err := exec.CommandContext(ctx, "avprobe", file).CombinedOutput()
 	if err != nil {
 		return 0, err
 	}

@@ -52,7 +52,7 @@ func New(root string) http.Handler {
 
 		w.Header().Set("Content-Type", "image/jpeg")
 		w.Header().Set("Last-Modified", stats.ModTime().Format(http.TimeFormat))
-		err = thumbnail.Thumbnail(w, abs, &thumbnail.Options{
+		err = thumbnail.Thumbnail(r.Context(), w, abs, &thumbnail.Options{
 			MaxWidth:     opt.MaxWidth,
 			MaxHeight:    opt.MaxHeight,
 			ImageQuality: opt.ImageQuality,

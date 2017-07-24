@@ -1,6 +1,7 @@
 package thumbnail
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"path"
@@ -17,7 +18,7 @@ type Options struct {
 	Strict              bool
 }
 
-func Thumbnail(w io.Writer, file string, opt *Options) error {
+func Thumbnail(ctx context.Context, w io.Writer, file string, opt *Options) error {
 	mime, err := mime.Detect(file)
 	if err != nil {
 		return err
@@ -37,7 +38,7 @@ func Thumbnail(w io.Writer, file string, opt *Options) error {
 			_, err := w.Write(pixel)
 			return err
 		}
-		return video.Thumbnail(w, file, &video.ThumbnailOptions{
+		return video.Thumbnail(ctx, w, file, &video.ThumbnailOptions{
 			MaxWidth:  opt.MaxWidth,
 			MaxHeight: opt.MaxHeight,
 			Offset:    opt.VideoOffset,
