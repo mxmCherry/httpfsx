@@ -50,6 +50,8 @@ var _ = Describe("Fs", func() {
 		Expect(list.Files[0].LastMod).NotTo(BeZero())
 		Expect(list.Files[0].Size).NotTo(BeZero())
 		Expect(list.Files[0].Mime).NotTo(BeEmpty())
+
+		Expect(list.LastMod).NotTo(BeZero())
 	})
 
 	It("should list dir", func() {
@@ -71,6 +73,8 @@ var _ = Describe("Fs", func() {
 		Expect(list.Files[0].LastMod).NotTo(BeZero())
 		Expect(list.Files[0].Size).NotTo(BeZero())
 		Expect(list.Files[0].Mime).NotTo(BeEmpty())
+
+		Expect(list.LastMod).NotTo(BeZero())
 	})
 
 	It("should describe file", func() {
@@ -89,6 +93,8 @@ var _ = Describe("Fs", func() {
 		Expect(list.Files[0].LastMod).NotTo(BeZero())
 		Expect(list.Files[0].Size).NotTo(BeZero())
 		Expect(list.Files[0].Mime).NotTo(BeEmpty())
+
+		Expect(list.LastMod).To(Equal(list.Files[0].LastMod))
 	})
 
 	DescribeTable("Abs",

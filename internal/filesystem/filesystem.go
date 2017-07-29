@@ -13,9 +13,10 @@ import (
 )
 
 type List struct {
-	Parent Dir
-	Dirs   []Dir
-	Files  []File
+	Parent  Dir
+	Dirs    []Dir
+	Files   []File
+	LastMod time.Time
 }
 
 type Dir struct {
@@ -41,21 +42,22 @@ func Ls(root, rel string) (*List, error) {
 	rel = path.Join("/", rel)
 	abs := filepath.Join(root, rel)
 
-	stat, err := os.Lstat(abs)
+	stats, err := os.Lstat(abs)
 	if err != nil {
 		return nil, err
 	}
 
 	list := &List{
-		Dirs:  []Dir{},
-		Files: []File{},
+		Dirs:    []Dir{},
+		Files:   []File{},
+		LastMod: stats.ModTime(),
 	}
 
-	if stat.IsDir() {
+	if stats.IsDir() {
 		list.Parent = Dir{
-			Name:    stat.Name(),
+			Name:    stats.Name(),
 			Path:    rel,
-			LastMod: stat.ModTime(),
+			LastMod: stats.ModTime(),
 		}
 
 		fis, err := ioutil.ReadDir(abs)
@@ -68,13 +70,16 @@ func Ls(root, rel string) (*List, error) {
 			if strings.HasPrefix(name, ".") {
 				continue
 			}
+
+			lm := fi.ModTime()
+
 			if fi.IsDir() {
 				list.Dirs = append(list.Dirs, Dir{
 					Name:    name,
 					Path:    path.Join(rel, name),
-					LastMod: fi.ModTime(),
+					LastMod: lm,
 				})
-			} else {
+			} else if fi.Mode().IsRegular() {
 				mime, err := mime.Detect(filepath.Join(abs, name))
 				if err != nil {
 					return nil, err
@@ -82,10 +87,16 @@ func Ls(root, rel string) (*List, error) {
 				list.Files = append(list.Files, File{
 					Name:    name,
 					Path:    path.Join(rel, name),
-					LastMod: fi.ModTime(),
+					LastMod: lm,
 					Size:    fi.Size(),
 					Mime:    mime,
 				})
+			} else {
+				continue
+			}
+
+			if lm.After(list.LastMod) {
+				list.LastMod = lm
 			}
 		}
 
@@ -112,10 +123,10 @@ func Ls(root, rel string) (*List, error) {
 		LastMod: parentStat.ModTime(),
 	}
 	list.Files = append(list.Files, File{
-		Name:    stat.Name(),
+		Name:    stats.Name(),
 		Path:    rel,
-		LastMod: stat.ModTime(),
-		Size:    stat.Size(),
+		LastMod: stats.ModTime(),
+		Size:    stats.Size(),
 		Mime:    mime,
 	})
 	return list, nil

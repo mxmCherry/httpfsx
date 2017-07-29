@@ -3,10 +3,10 @@ package thumbnail
 import (
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/gorilla/schema"
 	"github.com/mxmCherry/httpfsx/internal/filesystem"
+	"github.com/mxmCherry/httpfsx/internal/httptool"
 	"github.com/mxmCherry/httpfsx/internal/thumbnail"
 )
 
@@ -32,26 +32,17 @@ func New(root string) http.Handler {
 			opt.ImageQuality = 0.75
 		}
 
-		stats, err := os.Stat(abs)
+		stats, err := os.Lstat(abs)
 		if err != nil {
 			sendError(w, err, http.StatusInternalServerError)
 			return
 		}
 
-		if ifMod := r.Header.Get("If-Modified-Since"); ifMod != "" {
-			t, err := time.Parse(http.TimeFormat, ifMod)
-			if err != nil {
-				sendError(w, err, http.StatusBadRequest)
-				return
-			}
-			if stats.ModTime().Before(t) {
-				w.WriteHeader(http.StatusNotModified)
-				return
-			}
+		if httptool.NotModified(w, r, stats.ModTime()) {
+			return
 		}
 
 		w.Header().Set("Content-Type", "image/jpeg")
-		w.Header().Set("Last-Modified", stats.ModTime().Format(http.TimeFormat))
 		err = thumbnail.Thumbnail(r.Context(), w, abs, &thumbnail.Options{
 			MaxWidth:     opt.MaxWidth,
 			MaxHeight:    opt.MaxHeight,

@@ -9,6 +9,7 @@ import (
 
 	humanize "github.com/dustin/go-humanize"
 	"github.com/mxmCherry/httpfsx/internal/filesystem"
+	"github.com/mxmCherry/httpfsx/internal/httptool"
 )
 
 type Handler struct {
@@ -95,6 +96,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if httptool.NotModified(w, r, list.LastMod) {
 		return
 	}
 
