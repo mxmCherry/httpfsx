@@ -1,11 +1,3 @@
-/*
-
-Command httpfsx launches mobile-friendly HTTP file-system explorer (readonly)
-
-Basic usage:
-	httpfsx --addr=:1024 --root=$HOME/share
-
-*/
 package main
 
 import (
@@ -14,9 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/mxmCherry/httpfsx/internal/handlers/static"
-	"github.com/mxmCherry/httpfsx/internal/handlers/thumbnail"
-	"github.com/mxmCherry/httpfsx/internal/handlers/ui"
+	"github.com/mxmCherry/httpfsx/internal/httpfsx"
 )
 
 var flags struct {
@@ -26,7 +16,7 @@ var flags struct {
 
 func init() {
 	flag.StringVar(&flags.addr, "addr", ":1024", "listen addr")
-	flag.StringVar(&flags.root, "root", ":1024", "public dir")
+	flag.StringVar(&flags.root, "root", ".", "public root dir")
 }
 
 func main() {
@@ -46,21 +36,5 @@ func run() error {
 		flags.root = filepath.Join(wd, flags.root)
 	}
 
-	mux := http.NewServeMux()
-
-	mux.Handle("/static/", http.StripPrefix("/static", static.New()))
-	mux.Handle("/files/", http.StripPrefix("/files", http.FileServer(http.Dir(flags.root))))
-	mux.Handle("/thumb/", http.StripPrefix("/thumb", thumbnail.New(flags.root)))
-
-	mux.Handle("/index/", ui.New(flags.root, ui.Config{
-		MountPath:  "/index/",
-		RawPath:    "/files/",
-		StaticPath: "/static/",
-	}))
-
-	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/index/", http.StatusTemporaryRedirect)
-	}))
-
-	return http.ListenAndServe(flags.addr, mux)
+	return http.ListenAndServe(flags.addr, httpfsx.FileServer(http.Dir(flags.root)))
 }
