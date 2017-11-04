@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -22,8 +23,7 @@ func init() {
 func main() {
 	flag.Parse()
 	if err := run(); err != nil {
-		os.Stderr.WriteString(err.Error() + "\n")
-		os.Exit(1)
+		log.Fatalln(err.Error())
 	}
 }
 
@@ -36,5 +36,6 @@ func run() error {
 		flags.root = filepath.Join(wd, flags.root)
 	}
 
+	log.Println("listening on", flags.addr)
 	return http.ListenAndServe(flags.addr, httpfsx.FileServer(http.Dir(flags.root)))
 }

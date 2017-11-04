@@ -20,6 +20,7 @@ var tmpl = template.Must(template.New("dir").Funcs(template.FuncMap{
 				body {
 					margin: 0;
 					color: #111;
+					word-wrap: break-word;
 				}
 				h1 {
 					padding: 0 2mm;
@@ -48,7 +49,6 @@ var tmpl = template.Must(template.New("dir").Funcs(template.FuncMap{
 					display: inline-block;
 					vertical-align: middle;
 					line-height: normal;
-					word-wrap: break-word;
 					max-width: 100%;
 				}
 			</style>
