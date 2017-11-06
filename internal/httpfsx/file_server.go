@@ -15,6 +15,10 @@ func FileServer(fs http.FileSystem) http.Handler {
 
 		f, err := fs.Open(name)
 		if err != nil {
+			if os.IsNotExist(err) {
+				http.NotFound(w, r)
+				return
+			}
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
