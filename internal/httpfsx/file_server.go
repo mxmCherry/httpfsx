@@ -11,8 +11,6 @@ import (
 
 func FileServer(fs http.FileSystem) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-
 		name := path.Join("/", r.URL.Path)
 
 		f, err := fs.Open(name)
@@ -66,7 +64,6 @@ func FileServer(fs http.FileSystem) http.Handler {
 			}
 		}
 
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		if err := tmpl.Execute(w, data); err != nil {
 			log.Println(err.Error())
 		}
